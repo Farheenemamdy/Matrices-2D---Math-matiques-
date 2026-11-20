@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualiseur de transformations 2D (début)</title>
+<style>
+  body { font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 12px; }
+  canvas { width: 100%; border: 1px solid #999; background: #fff; }
+  button { padding: 10px 14px; margin: 4px 4px 0 0; font-size: 1rem; }
+  pre { background: #f3f3f3; padding: 8px; }
+</style>
+</head>
+<body>
+<h1>Transformations 2D</h1>
+<canvas id="dessin" width="400" height="400"></canvas>
+<div>
+  <button id="btn-translation">Translation (+1, +1)</button>
+  <button id="btn-echelle">Échelle ×2</button>
+  <button id="btn-reset">Recommencer</button>
+</div>
+<p>Matrice appliquée :</p>
+<pre id="matrice">(aucune)</pre>
+
+<script>
+// Le polygone : une liste de points [x, y]. Ici un triangle de départ.
+const depart = [[1, 1], [4, 1], [2, 3]];
+let points = depart.map(p => p.slice());
+
+const toile = document.getElementById('dessin');
+const ctx = toile.getContext('2d');
+const ECHELLE = 40;   // 1 unité mathématique = 40 pixels
+
+// Passe d'un point mathématique à un point de l'écran (l'axe y est inversé à l'écran).
+function versEcran(p) {
+  return [p[0] * ECHELLE + 40, toile.height - 40 - p[1] * ECHELLE];
+}
+
+// Multiplie une matrice 3×3 par un point (x, y, 1) : coordonnées homogènes.
+function appliquer(M, p) {
+  const v = [p[0], p[1], 1];
+  const r = M.map(ligne => ligne[0] * v[0] + ligne[1] * v[1] + ligne[2] * v[2]);
+  return [r[0], r[1]];
+}
+
+function dessiner() {
+  ctx.clearRect(0, 0, toile.width, toile.height);
+  // Les axes
+  ctx.strokeStyle = '#999';
+  ctx.beginPath();
+  ctx.moveTo(40, 0); ctx.lineTo(40, toile.height);
+  ctx.moveTo(0, toile.height - 40); ctx.lineTo(toile.width, toile.height - 40);
+  ctx.stroke();
+  // Le polygone
+  ctx.strokeStyle = '#1a56db';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const [x, y] = versEcran(p);
+    if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+  });
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function transformer(M) {
+  points = points.map(p => appliquer(M, p));
+  document.getElementById('matrice').textContent = M.map(l => l.join('  ')).join('\n');
+  dessiner();
+}
+
+document.getElementById('btn-translation').onclick = () => transformer([[1, 0, 1], [0, 1, 1], [0, 0, 1]]);
+document.getElementById('btn-echelle').onclick = () => transformer([[2, 0, 0], [0, 2, 0], [0, 0, 1]]);
+document.getElementById('btn-reset').onclick = () => {
+  points = depart.map(p => p.slice());
+  document.getElementById('matrice').textContent = '(aucune)';
+  dessiner();
+};
+
+dessiner();
+</script>
+</body>
+</html>
